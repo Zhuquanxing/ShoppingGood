@@ -1,20 +1,76 @@
+<!-- eslint-disable no-undef -->
 <template>
     <div class="wrapper">
         <img class="wrapper__img" src="http://www.dell-lee.com/imgs/vue3/user.png"/>
         <div class="wrapper__input">
-            <input class="wrapper__input__content" placeholder="请输入手机号"/>
+            <input class="wrapper__input__content" placeholder="用户名" v-model="username">
         </div>
         <div class="wrapper__input">
-            <input class="wrapper__input__content" placeholder="请输入密码" />
+            <input class="wrapper__input__content" placeholder="请输入密码" v-model="password" autocomplete="new-password"/>
         </div>
-        <div class="wrapper__login-button">登录</div>
-        <div class="wrapper__login-link">立即注册</div>
+        <div class="wrapper__login-button" @click=" handleLogin ">登录</div>
+        <div class="wrapper__login-link" @click=" handleRegisterClick ">立即注册</div>
+        <Toast v-if="show" :message="toastMessage"/>
     </div>
 </template>
 
 <script>
+import { reactive, toRefs } from 'vue'
+import { useRouter } from 'vue-router'
+import { post } from '../../utils/request'
+import Toast, { useToastEffect } from '../../components/Toast'
+
+const useLoginEffect = (showToast) => {
+  const router = useRouter()
+  const data = reactive({ username: '', password: '' })
+  const handleLogin = async () => {
+    try {
+      const result = await post('/api/user/login', {
+        username: 'data.username',
+        password: 'data.password'
+      })
+      localStorage.isLogin = true
+      router.push({ name: 'Home' })
+      print(result)
+      // if (result?.errno === 0) {
+
+      // } else {
+      //   showToast('请求失败')
+      // }
+    } catch (e) {
+      showToast('请求失败')
+    }
+  }
+
+  const { username, password } = toRefs(data)
+  return { handleLogin, username, password }
+}
+
+const useRegisterEffect = () => {
+  const router = useRouter()
+  const handleRegisterClick = () => {
+    router.push({ name: 'Register' })
+  }
+  return { handleRegisterClick }
+}
+
 export default {
-  name: 'Login'
+  name: 'Login',
+  components: { Toast },
+  setup () {
+    const { show, toastMessage, showToast } = useToastEffect()
+    const { handleLogin, username, password } = useLoginEffect(showToast)
+    const { handleRegisterClick } = useRegisterEffect()
+
+    return {
+      username,
+      password,
+      handleLogin,
+      handleRegisterClick,
+      show,
+      toastMessage
+    }
+  }
 }
 </script>
 
@@ -56,11 +112,11 @@ export default {
     &__login-button {
         margin: 32px 35px 16px 35px;
         line-height: 48px;
-        background: #0091ff;
+        background: $btn-bgColor;
         box-shadow: 0 4px 8px 0 rgba(0,145,255,0.32);
         border-radius: 4px;
         border-radius: 4px;
-        color: #fff;
+        color: $bg_color;
         font-size: 16px;
         text-align: center;
     }
