@@ -97,7 +97,8 @@ export default {
         border-radius: 6px;
         border-radius: 6px;
         &__content {
-            line-height: 48px;
+            margin-top: 12px;
+            line-height: 22px;
             border: none;
             outline: none;
             width: 100%;

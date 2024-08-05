@@ -20,9 +20,10 @@ const useNearbyListEffect = () => {
   const nearbyList = ref([])
   const getNearbyList = async () => {
     const result = await get('/api/shop/hot-list')
-    console.log(result)
-    if (result?.errno === 0 && result?.data?.length) {
-      nearbyList.value = result.data
+    console.log('result: %@', result)
+    console.log(result?.data)
+    if (result?.data.errno === 0 && result?.data?.data.length) {
+      nearbyList.value = result.data.data
     }
   }
   return { getNearbyList, nearbyList }

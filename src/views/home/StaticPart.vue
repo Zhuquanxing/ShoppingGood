@@ -113,6 +113,7 @@ export default {
         margin: 6px 0 16px 0;
         text-align: center;
         color: $content-fontcolor;
+        font-size: 14px;
       }
     }
     .gap {

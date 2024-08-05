@@ -13,7 +13,7 @@
             </div>
         </div>
     <ShopInfo :item="item" :hideBorder = "true" v-show="item.imgUrl"/>
-    <Content />
+    <Content :shopName="item.name" />
     <Cart />
     </div>
 </template>
@@ -30,9 +30,11 @@ const useShopInfoEffect = () => {
   const route = useRoute()
   const data = reactive({ item: {} })
   const getItemData = async () => {
-    const result = await get(`/api/shop/${route.params.id}`)
-    if (result?.errno === 0 && result?.data) {
-      data.item = result.data
+    // const result = await get(`/api/shop/${route.params.id}`)
+    const result = await get('/api/shop', { id: route.params.id })
+    console.log(result)
+    if (result?.data.errno === 0 && result?.data.data) {
+      data.item = result.data.data
     }
   }
   const { item } = toRefs(data)

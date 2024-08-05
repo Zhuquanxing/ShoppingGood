@@ -1,10 +1,29 @@
 <template>
+    <div class="mask" v-if="showCart && calculations.total > 0"
+    @click="handleCarShowChange"
+    />
     <div class="cart">
-        <div class="product">
-            <template
+        <div class="product" v-if="showCart && calculations.total > 0">
+            <div class="product_header">
+                <div class="product_header_all"
+                @click="() => setCartItemsChecked(shopId)">
+                    <span class="product_header_icon iconfont"
+                    v-html="calculations.allChecked ? '&#xe618;' : '&#xe667;'"
+                    ></span>
+                    全选</div>
+                <div class="product_header_clear">
+                <span class="product_header_clear_btn" @click="() => cleanCartProducts(shopId)">清空购物车</span>
+            </div>
+            </div>
+          <div
           v-for="item in productList"
-          :key="item._id">
-          <div class="product_item" v-if="item.count > 0">
+          :key="item._id"
+          class="product_item"
+          >
+            <div class="product_item_checked iconfont"
+            v-html="item.checked ? '&#xe618;' : '&#xe667;'"
+            @click.stop="() => changeCartItemChecked(shopId, item._id)"
+            />
             <img class="product_item_img" :src="item.imgUrl" alt="">
             <div class="product_item_detail">
                 <h4 class="product_item_title">{{item.name}}</h4>
@@ -14,70 +33,74 @@
                 </p>
             </div>
             <div class="product_number">
-                <span class="product_number_minus"
+                <span class="product_number_minus iconfont"
                 @click="() => {changeCartItemInfo(shopId, item._id, item, -1)}"
-                >-</span>
+                >&#xe677;</span>
                   {{ item.count || 0 }}
-                <span class="product_number_plus"
+                <span class="product_number_plus iconfont"
                 @click="() => {changeCartItemInfo(shopId, item._id, item, 1)}"
-                >+</span>
+                >&#xe6b2;</span>
             </div>
             </div>
-            </template>
         </div>
        <div class="check">
            <div class="icon">
-               <img src="http://www.dell-lee.com/imgs/vue3/tomato.png"
+               <img src="http://www.dell-lee.com/imgs/vue3/basket.png"
                class="check_icon_img"
+               @click="handleCarShowChange"
                />
-               <div class="check_icon_tag">{{ total }}</div>
+               <div class="check_icon_tag">{{ calculations.total }}</div>
            </div>
            <div class="check_info">
-              总计：<span class="check_info_price">&yen; {{price}}</span>
+              总计：<span class="check_info_price">&yen; {{calculations.price}}</span>
            </div>
-           <div class="check_btn">去结算</div>
+           <div class="check_btn">
+            <router-link :to="{path: `/OrderConfirmation/${shopId}`}">
+                去结算
+            </router-link>
+            </div>
         </div>
     </div>
 </template>
 
 <script>
-import { computed } from 'vue'
+import { ref } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute } from 'vue-router'
-import { useCommonCartEffect } from './commonCartEffect'
+import { useCommonCartEffect } from '../../effects/cartEffects'
 
 const useCartEffect = (shopId) => {
   const store = useStore()
-  const cartList = store.state.cartList
-  const total = computed(() => {
-    const productList = cartList[shopId]
-    let count = 0
-    if (productList) {
-      for (const i in productList) {
-        const product = productList[i]
-        count += product.count
-      }
-    }
-    return count
-  })
-  const price = computed(() => {
-    const productList = cartList[shopId]
-    let count = 0
-    if (productList) {
-      for (const i in productList) {
-        const product = productList[i]
-        count += (product.count * product.price)
-      }
-    }
-    return count.toFixed(2)
-  })
+  const { calculations, productList, changeCartItemInfo } = useCommonCartEffect(shopId)
 
-  const productList = computed(() => {
-    const productList = cartList[shopId] || []
-    return productList
-  })
+  const changeCartItemChecked = (shopId, productId) => {
+    store.commit('changeCartItemChecked', { shopId, productId })
+  }
 
-  return { total, price, productList }
+  const cleanCartProducts = (shopId) => {
+    store.commit('cleanCartProducts', { shopId })
+  }
+
+  const setCartItemsChecked = () => {
+    store.commit('setCartItemsChecked', { shopId })
+  }
+
+  return {
+    calculations,
+    productList,
+    changeCartItemInfo,
+    changeCartItemChecked,
+    cleanCartProducts,
+    setCartItemsChecked
+  }
+}
+
+const toggleCarEffect = () => {
+  const showCart = ref(false)
+  const handleCarShowChange = () => {
+    showCart.value = !showCart.value
+  }
+  return { showCart, handleCarShowChange }
 }
 
 export default {
@@ -85,9 +108,22 @@ export default {
   setup () {
     const route = useRoute()
     const shopId = route.params.id
-    const { changeCartItemInfo } = useCommonCartEffect()
-    const { total, price, productList } = useCartEffect(shopId)
-    return { total, price, shopId, productList, changeCartItemInfo }
+    const {
+      calculations, productList, changeCartItemInfo,
+      changeCartItemChecked, cleanCartProducts, setCartItemsChecked
+    } = useCartEffect(shopId)
+    const { showCart, handleCarShowChange } = toggleCarEffect()
+    return {
+      calculations,
+      shopId,
+      productList,
+      changeCartItemInfo,
+      changeCartItemChecked,
+      cleanCartProducts,
+      setCartItemsChecked,
+      showCart,
+      handleCarShowChange
+    }
   }
 }
 </script>
@@ -95,22 +131,66 @@ export default {
 <style lang="scss" scoped>
 @import '../../style/viriables';
 @import '../../style/mixins.scss';
+
+.mask {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    background: rgba(0, 0, 0, .5);
+    z-index: 1;
+}
 .cart {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
+    z-index: 2;
+    background: $bg_color;
 }
 .product {
     overflow-y: scroll;
     flex: 1;
-    background: #fff;
+    background: $bg_color;
+    &_header {
+        display: flex;
+        line-height: 52px;
+        border-bottom: 1px solid $content-bgColor;
+        font-size: 14px;
+        color: $content-fontcolor;
+        &_all {
+            width: 64px;
+            margin-left: 18px;
+        }
+        &_icon {
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: top;
+            color: $btn-bgColor;
+            font-size: 20px;
+        }
+        &_clear {
+            flex: 1;
+            margin-right: 16px;
+            text-align: right;
+            &_btn {
+                display: inline-block;
+            }
+        }
+    }
     &_item {
         position: relative;
         display: flex;
         padding: 12px 0;
         margin: 0 16px;
         border-bottom: 1px solid $content-bgColor;
+        &_checked {
+            line-height: 50px;
+            margin-right: 20px;
+            color: $btn-bgColor;
+            font-size: 20px;
+        }
         &_detail {
             overflow: hidden;
         }
@@ -121,7 +201,7 @@ export default {
         }
         &_title {
             line-height: 2px;
-            font-size: 14px;
+            font-size: 20px;
             color: $content-fontcolor;
             @include ellipsis;
         }
@@ -144,25 +224,17 @@ export default {
         .product_number {
             position: absolute;
             right: 0;
-            bottom: 12px;
-            &_minus,
-            &_plus {
-                display: inline-block;
-                width: 20px;
-                height: 20px;
-                line-height: 16px;
-                border-radius: 50%;
-                font-size: 20px;
-                text-align: center;
-            }
+            bottom: 26px;
             &_minus {
-                border: 1px solid $medium-fontColor;
+                position: relative;
+                top: 2px;
                 color: $medium-fontColor;
                 margin-right: 5px;
             }
             &_plus {
-                background: $btn-bgColor;
-                color: $bg_color;
+                position: relative;
+                top: 2px;
+                color: $btn-bgColor;
                 margin-left: 5px;
             }
         }
@@ -213,8 +285,11 @@ export default {
         width: 98px;
         background-color: #4fb0f9;
         text-align: center;
-        color: $bg_color;
         font-size: 14px;
+        a {
+            color: $bg_color;
+            text-decoration: none;
+        }
     }
 }
 </style>

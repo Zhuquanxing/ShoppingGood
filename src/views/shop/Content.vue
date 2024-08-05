@@ -22,13 +22,13 @@
                 </p>
             </div>
             <div class="product_number">
-                <span class="product_number_minus"
-                @click="() => {changeCartItemInfo(shopId, item._id, item, -1)}"
-                >-</span>
-                  {{ cartList?.[shopId]?.[item._id]?.count || 0 }}
-                <span class="product_number_plus"
-                @click="() => {changeCartItemInfo(shopId, item._id, item, 1)}"
-                >+</span>
+                <span class="product_number_minus iconfont"
+                @click="() => {changeCartItem(shopId, item._id, item, -1, shopName)}"
+                >&#xe677;</span>
+                  {{ getProductCartCount(shopId, item._id) }}
+                <span class="product_number_plus iconfont"
+                @click="() => {changeCartItem(shopId, item._id, item, 1, shopName)}"
+                >&#xe6b2;</span>
             </div>
           </div>
        </div>
@@ -38,8 +38,9 @@
 <script>
 import { reactive, ref, toRefs, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
+import { useStore } from 'vuex'
 import { get } from '../../utils/request'
-import { useCommonCartEffect } from './commonCartEffect'
+import { useCommonCartEffect } from '../../effects/cartEffects'
 
 const categories = [
   { name: '全部商品', tab: 'all' },
@@ -62,8 +63,9 @@ const useCurrentListEffect = (currentTab, shopId) => {
     const result = await get(`/api/shop/${shopId}/products`, {
       tab: currentTab.value
     })
-    if (result?.errno === 0 && result?.data) {
-      content.list = result.data
+    console.log(result)
+    if (result?.data.errno === 0 && result?.data.data) {
+      content.list = result.data.data
     }
   }
 
@@ -72,18 +74,36 @@ const useCurrentListEffect = (currentTab, shopId) => {
   return { list }
 }
 
+const useCartEffect = () => {
+  const store = useStore()
+  const { changeCartItemInfo, cartList } = useCommonCartEffect()
+  const changeShopName = (shopId, shopName) => {
+    store.commit('changeShopName', { shopId, shopName })
+  }
+  const changeCartItem = (shopId, productId, item, num, shopName) => {
+    changeCartItemInfo(shopId, productId, item, num)
+    changeShopName(shopId, shopName)
+  }
+  const getProductCartCount = (shopId, productId) => {
+    if (cartList?.[shopId]?.productList?.[productId] === undefined) {
+      return 0
+    }
+    return cartList?.[shopId]?.productList?.[productId].count || 0
+  }
+  return { cartList, changeCartItem, getProductCartCount }
+}
+
 export default {
   name: 'Content',
+  props: ['shopName'],
   setup () {
     const route = useRoute()
     const shopId = route.params.id
     const { currentTab, handleTabClick } = useTabEffect()
     const { list } = useCurrentListEffect(currentTab, shopId)
-    const { cartList, changeCartItemInfo } = useCommonCartEffect()
+    const { changeCartItem, cartList, getProductCartCount } = useCartEffect()
 
-    // const { contentList } = toRefs(data)
-
-    return { categories, currentTab, handleTabClick, list, cartList, shopId, changeCartItemInfo }
+    return { categories, currentTab, handleTabClick, list, shopId, cartList, changeCartItem, getProductCartCount }
   }
 }
 </script>
@@ -101,9 +121,10 @@ export default {
 }
 .category {
     overflow-y: scroll;
-    height: 100%;
+    margin-top: 140px;
+    height: 80%;
     width: 76px;
-    background: #f5f5f5;
+    background: $search-bgColor;
     &_item {
         line-height: 4px;
         text-align: center;
@@ -116,6 +137,8 @@ export default {
 }
 .product {
     overflow-y: scroll;
+    margin-top: 140px;
+    height: 80%;
     flex: 1;
     &_item {
         position: relative;
@@ -130,9 +153,10 @@ export default {
             width: 75px;
             height: 75px;
             margin-right: 16px;
+            margin-top: 22px;
         }
         &_title {
-            line-height: 2px;
+            line-height: 20px;
             font-size: 14px;
             color: $content-fontcolor;
             @include ellipsis;
@@ -162,25 +186,18 @@ export default {
             position: absolute;
             right: 0;
             bottom: 12px;
-            &_minus,
-            &_plus {
-                display: inline-block;
-                width: 20px;
-                height: 20px;
-                line-height: 16px;
-                border-radius: 50%;
-                font-size: 20px;
-                text-align: center;
-            }
+            line-height: 18px;
             &_minus {
-                border: 1px solid $medium-fontColor;
-                color: $medium-fontColor;
-                margin-right: 5px;
+              position: relative;
+              top: 2px;
+              color: $medium-fontColor;
+              margin-right: 5px;
             }
             &_plus {
-                background: $btn-bgColor;
-                color: $bg_color;
-                margin-left: 5px;
+              position: relative;
+              top: 2px;
+              color: $btn-bgColor;
+              margin-left: 5px;
             }
         }
     }

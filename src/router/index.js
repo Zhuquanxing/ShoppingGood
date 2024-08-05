@@ -5,17 +5,32 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    component: () => import(/* webpackChunkName: "home_123" */ '../views/home/Home')
+    component: () => import(/* webpackChunkName: "home" */ '../views/home/Home')
+  },
+  {
+    path: '/cartList',
+    name: 'CartList',
+    component: () => import(/* webpackChunkName: "cartList" */ '../views/cartList/CartList')
+  },
+  {
+    path: '/orderConfirmation/:id',
+    name: 'OrderConfirmation',
+    component: () => import(/* webpackChunkName: "OrderConfirmation" */ '../views/orderConfirmation/OrderConfirmation')
+  },
+  {
+    path: '/orderList',
+    name: 'OrderList',
+    component: () => import(/* webpackChunkName: "OrderList" */ '../views/orderList/OrderList')
   },
   {
     path: '/shop/:id',
     name: 'Shop',
-    component: () => import(/* webpackChunkName: "shop_123" */ '../views/shop/Shop')
+    component: () => import(/* webpackChunkName: "shop" */ '../views/shop/Shop')
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import(/* webpackChunkName: "register_123" */ '../views/register/Register'),
+    component: () => import(/* webpackChunkName: "register" */ '../views/register/Register'),
     beforeEnter (to, from, next) {
       const isLogin = localStorage.isLogin
       isLogin ? next({ name: 'Home' }) : next()
